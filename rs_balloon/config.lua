@@ -11,7 +11,7 @@ Config.EnableTax = true   -- If true, the balloon rental fee will be charged, if
 Config.BallonPrice = 5.00 -- Rental price
 
 Config.EnableBalloonTimer = true -- If you set it to false, the balloon will not disappear automatically.
-Config.BallonUseTime = 2 -- Rental duration time in minutes
+Config.BallonUseTime = 30 -- Rental duration time in minutes
 Config.BalloonModel = "hotairballoon01x"
 
 -- Hot Air Balloon Rental locations
