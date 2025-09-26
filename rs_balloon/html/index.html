@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Balloon Prompt</title>
+    <style>
+        #promptAlqui {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.849);
+            color: #a77535be;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 20px;
+            border: 2px solid #a77535be;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="promptAlqui"></div>
+
+    <script>
+        window.addEventListener('message', function(event) {
+            if (event.data.action === "showAlqui") {
+                const text = event.data.text || "";
+                const prompt = document.getElementById("promptAlqui");
+                prompt.textContent = text;
+                prompt.style.display = "block";
+            } else if (event.data.action === "hideAlqui") {
+                document.getElementById("promptAlqui").style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>
