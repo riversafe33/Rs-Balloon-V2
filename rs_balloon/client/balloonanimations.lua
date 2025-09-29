@@ -1,108 +1,122 @@
-local activePilot = true
-local currentAnim
-local rope = nil
-local isDrivingBalloon = false
+local pilotActive = true
+local currentSequence
+local tether = nil
+local balloonControl = false
 
-local function isPlayingAnim(ped, anim)
-	return IsEntityPlayingAnim(ped, anim.dict, anim.name, anim.flags)
+local function isAnimationRunning(ped, sequence)
+    return IsEntityPlayingAnim(ped, sequence.lib, sequence.clip, sequence.flags)
 end
 
-local function playAnim(ped, anim)
-	if not DoesAnimDictExist(anim.dict) then
-		return
-	end
+local function triggerAnimation(ped, sequence)
+    if not DoesAnimDictExist(sequence.lib) then
+        return
+    end
 
-	RequestAnimDict(anim.dict)
+    RequestAnimDict(sequence.lib)
 
-	while not HasAnimDictLoaded(anim.dict) do
-		Citizen.Wait(0)
-	end
+    while not HasAnimDictLoaded(sequence.lib) do
+        Citizen.Wait(0)
+    end
 
-	TaskPlayAnim(ped, anim.dict, anim.name, 1.0, 1.0, -1, 29, 0.0, false, 0, false, "", false)
+    TaskPlayAnim(ped, sequence.lib, sequence.clip, 1.0, 1.0, -1, 29, 0.0, false, 0, false, "", false)
 
-	RemoveAnimDict(anim.dict)
+    RemoveAnimDict(sequence.lib)
 end
 
-local function stopAnim(ped, anim)
-	StopAnimTask(ped, anim.dict, anim.name, 1.0)
+local function haltAnimation(ped, sequence)
+    StopAnimTask(ped, sequence.lib, sequence.clip, 1.0)
 end
-
-AddEventHandler("onResourceStop", function(resourceName)
-	if GetCurrentResourceName() == resourceName then
-		if currentAnim then
-			stopAnim(PlayerPedId(), currentAnim)
-		end
-	end
-end)
 
 Citizen.CreateThread(function()
+    while true do
+        local waitAllowed = true
 
-	while true do
-		local canWait = true
+        if pilotActive then
+            local ped = PlayerPedId()
+            local vehicle = GetVehiclePedIsIn(ped)
+            local modelId = GetEntityModel(vehicle)
 
-		if activePilot then
-			local playerPed = PlayerPedId()
-            local veh = GetVehiclePedIsIn(playerPed)
-            local model = GetEntityModel(veh)
-            if model == 1588640480 then
+            if modelId == 1588640480 then
+                local animName
 
-				local ropePull
+                if IsControlPressed(0, 0x7232BAB3) then
+                    animName = "base_burner_pull_arthur"
+                else
+                    animName = "idle_burner_line_arthur"
+                end
 
+                currentSequence = {
+                    lib = "script_story@gng2@ig@ig_2_balloon_control",
+                    clip = animName,
+                    flags = 17
+                }
 
-				if IsControlPressed(0, 0x7232BAB3) then
-					ropePull = "base_burner_pull_arthur"
-				else
-					ropePull = "idle_burner_line_arthur"
-				end
+                if currentSequence and not isAnimationRunning(ped, currentSequence) then
+                    triggerAnimation(ped, currentSequence)
+                end
 
-				currentAnim = {
-					dict = ("script_story@gng2@ig@ig_2_balloon_control"),
-					name = ropePull,
-					flags = 17
-				}
+                waitAllowed = false
+            elseif currentSequence then
+                haltAnimation(ped, currentSequence)
+                currentSequence = nil
+            end
+        end
 
-				if currentAnim and not isPlayingAnim(playerPed, currentAnim) then
-					playAnim(playerPed, currentAnim)
-				end
-
-				canWait = false
-			elseif currentAnim then
-				stopAnim(playerPed, currentAnim)
-				currentAnim = nil
-			end
-		end
-
-		Citizen.Wait(canWait and 1000 or 100)
-	end
+        Citizen.Wait(waitAllowed and 1000 or 100)
+    end
 end)
 
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(1000)
 
-        local playerPed = PlayerPedId()
-        local vehicle = GetVehiclePedIsIn(playerPed, false)
+        local ped = PlayerPedId()
+        local balloon = GetVehiclePedIsIn(ped, false)
 
-        if vehicle ~= 0 and GetEntityModel(vehicle) == GetHashKey('hotairballoon01') then
-            if not isDrivingBalloon then
+        if balloon ~= 0 and GetEntityModel(balloon) == GetHashKey("hotairballoon01") then
+            if not balloonControl then
+                local pos = GetEntityCoords(ped)
+                local length = 0.7
 
-                local playerCoords = GetEntityCoords(playerPed)
+                if not tether then
+                    tether = AddRope(
+                        pos.x, pos.y, pos.z,
+                        0.0, 0.0, 0.0,
+                        length,
+                        7,
+                        length, length, length,
+                        true,
+                        false, false,
+                        1.0, false, 0
+                    )
+                end
 
-                local ropeLength = 0.7
+                local boneIndex = GetEntityBoneIndexByName(balloon, "engine")
 
-                rope = AddRope(playerCoords.x, playerCoords.y, playerCoords.z, 0.0, 0.0, 0.0, ropeLength, 7, ropeLength, ropeLength, ropeLength, false, false, false, 1.0, false, 0)
+                if boneIndex ~= -1 then
+                    AttachEntitiesToRope(
+                        tether,
+                        ped,
+                        balloon,
+                        0.0, 0.05, 0.05,
+                        0.0, 0.0, 0.0,
+                        length,
+                        0, 0,
+                        "PH_L_HAND", "engine",
+                        0, -1, -1,
+                        0, 0, 1, 1
+                    )
 
-                AttachEntitiesToRope(rope, playerPed, vehicle, 0.0, 0.05, 0.05, -0.2, 0.0, 0.0, ropeLength, 0, 0, "PH_L_HAND", "engine", 0, -1, -1, 0, 0, 1, 1)
-
-                isDrivingBalloon = true
+                    balloonControl = true
+                end
             end
         else
-            if isDrivingBalloon then
-                if rope then
-                    DeleteRope(rope)
-                    rope = nil
+            if balloonControl then
+                if tether then
+                    DeleteRope(tether)
+                    tether = nil
                 end
-                isDrivingBalloon = false
+                balloonControl = false
             end
         end
     end
