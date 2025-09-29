@@ -1,4 +1,3 @@
--- Animation
 local pilotActive = true
 local currentSequence
 local tether = nil
