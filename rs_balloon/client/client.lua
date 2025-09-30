@@ -105,11 +105,14 @@ Citizen.CreateThread(function()
 			end
 
 			if IsControlJustPressed(0, `INPUT_VEH_HORN`) then
-				if DoesEntityExist(balloon) then
-					DeleteEntity(balloon)
-					balloon = nil
-				end
-			end
+                if DoesEntityExist(balloon) then
+                    local balloonHeight = GetEntityHeightAboveGround(balloon)
+                    if balloonHeight <= 0.5 then
+                        DeleteEntity(balloon)
+                        balloon = nil
+                    end
+                end
+            end
 
 			Citizen.Wait(0)
 		else
