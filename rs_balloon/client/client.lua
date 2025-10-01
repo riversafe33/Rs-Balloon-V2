@@ -4,6 +4,9 @@ local NPCss = {}
 local balloon
 local lockZ = false
 local useCameraRelativeControls = true
+local spawn_balloon = nil
+local current_balloon_id = nil
+
 local balloonPrompts = UipromptGroup:new(T.Prompts.Ballon)
 local nsPrompt = Uiprompt:new({`INPUT_VEH_MOVE_UP_ONLY`, `INPUT_VEH_MOVE_DOWN_ONLY` }, T.Prompts.NorthSouth, balloonPrompts)
 local wePrompt = Uiprompt:new({`INPUT_VEH_MOVE_LEFT_ONLY`, `INPUT_VEH_MOVE_RIGHT_ONLY`}, T.Prompts.WestEast, balloonPrompts)
@@ -11,6 +14,25 @@ local brakePrompt = Uiprompt:new(`INPUT_CONTEXT_X`, T.Prompts.DownBalloon, ballo
 local lockZPrompt = Uiprompt:new(`INPUT_CONTEXT_A`, T.Prompts.LockInAltitude, balloonPrompts)
 local throttlePrompt = Uiprompt:new(`INPUT_VEH_FLY_THROTTLE_UP`, T.Prompts.UpBalloon, balloonPrompts)
 local deleteBalloonPrompt = Uiprompt:new(`INPUT_VEH_HORN`, T.Prompts.RemoveBalloon, balloonPrompts)
+
+Citizen.CreateThread(function()
+    while true do
+        if balloon and deleteBalloonPrompt then
+            local isRental = (balloon == spawn_balloon)
+            deleteBalloonPrompt:setEnabledAndVisible(not isRental)
+        end
+        Citizen.Wait(100)
+    end
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        if balloon == spawn_balloon then
+            DisableControlAction(0, `INPUT_VEH_HORN`, true)
+        end
+        Citizen.Wait(0)
+    end
+end)
 
 local function GetCameraRelativeVectors()
     local camRot = GetGameplayCamRot(2)
@@ -21,90 +43,90 @@ local function GetCameraRelativeVectors()
 end
 
 Citizen.CreateThread(function()
-	while true do
-		local playerPed = PlayerPedId()
-		local vehiclePedIsIn = GetVehiclePedIsIn(playerPed, false)
+    while true do
+        local playerPed = PlayerPedId()
+        local vehiclePedIsIn = GetVehiclePedIsIn(playerPed, false)
 
-		if vehiclePedIsIn ~= 0 and GetEntityModel(vehiclePedIsIn) == `hotairballoon01` then
-			if not balloon then
-				balloon = vehiclePedIsIn
-			end
-		else
-			if balloon then
-				balloon = nil
-			end
-		end
+        if vehiclePedIsIn ~= 0 and GetEntityModel(vehiclePedIsIn) == `hotairballoon01` then
+            if not balloon then
+                balloon = vehiclePedIsIn
+            end
+        else
+            if balloon then
+                balloon = nil
+            end
+        end
 
-		Citizen.Wait(500)
-	end
+        Citizen.Wait(500)
+    end
 end)
 
 Citizen.CreateThread(function()
-	local bv
-	while true do
-		if balloon then
-			balloonPrompts:handleEvents()
+    local bv
+    while true do
+        if balloon then
+            balloonPrompts:handleEvents()
 
-			local speed = IsControlPressed(0, `INPUT_VEH_TRAVERSAL`) and 0.15 or 0.05
-			local v1 = GetEntityVelocity(balloon)
-			local v2 = v1
+            local speed = IsControlPressed(0, `INPUT_VEH_TRAVERSAL`) and 0.15 or 0.05
+            local v1 = GetEntityVelocity(balloon)
+            local v2 = v1
 
-			if useCameraRelativeControls then
-				local forwardVec, rightVec = GetCameraRelativeVectors()
-				if IsControlPressed(0, `INPUT_VEH_MOVE_UP_ONLY`) then
-					v2 = v2 + forwardVec * speed
-				end
-				if IsControlPressed(0, `INPUT_VEH_MOVE_DOWN_ONLY`) then
-					v2 = v2 - forwardVec * speed
-				end
-				if IsControlPressed(0, `INPUT_VEH_MOVE_LEFT_ONLY`) then
-					v2 = v2 - rightVec * speed
-				end
-				if IsControlPressed(0, `INPUT_VEH_MOVE_RIGHT_ONLY`) then
-					v2 = v2 + rightVec * speed
-				end
-			else
-				if IsControlPressed(0, `INPUT_VEH_MOVE_UP_ONLY`) then
-					v2 = v2 + vector3(0, speed, 0)
-				end
-				if IsControlPressed(0, `INPUT_VEH_MOVE_DOWN_ONLY`) then
-					v2 = v2 - vector3(0, speed, 0)
-				end
-				if IsControlPressed(0, `INPUT_VEH_MOVE_LEFT_ONLY`) then
-					v2 = v2 - vector3(speed, 0, 0)
-				end
-				if IsControlPressed(0, `INPUT_VEH_MOVE_RIGHT_ONLY`) then
-					v2 = v2 + vector3(speed, 0, 0)
-				end
-			end
+            if useCameraRelativeControls then
+                local forwardVec, rightVec = GetCameraRelativeVectors()
+                if IsControlPressed(0, `INPUT_VEH_MOVE_UP_ONLY`) then
+                    v2 = v2 + forwardVec * speed
+                end
+                if IsControlPressed(0, `INPUT_VEH_MOVE_DOWN_ONLY`) then
+                    v2 = v2 - forwardVec * speed
+                end
+                if IsControlPressed(0, `INPUT_VEH_MOVE_LEFT_ONLY`) then
+                    v2 = v2 - rightVec * speed
+                end
+                if IsControlPressed(0, `INPUT_VEH_MOVE_RIGHT_ONLY`) then
+                    v2 = v2 + rightVec * speed
+                end
+            else
+                if IsControlPressed(0, `INPUT_VEH_MOVE_UP_ONLY`) then
+                    v2 = v2 + vector3(0, speed, 0)
+                end
+                if IsControlPressed(0, `INPUT_VEH_MOVE_DOWN_ONLY`) then
+                    v2 = v2 - vector3(0, speed, 0)
+                end
+                if IsControlPressed(0, `INPUT_VEH_MOVE_LEFT_ONLY`) then
+                    v2 = v2 - vector3(speed, 0, 0)
+                end
+                if IsControlPressed(0, `INPUT_VEH_MOVE_RIGHT_ONLY`) then
+                    v2 = v2 + vector3(speed, 0, 0)
+                end
+            end
 
-			if IsControlPressed(0, `INPUT_CONTEXT_X`) then
-				if bv then
-					local x = bv.x > 0 and bv.x - speed or bv.x + speed
-					local y = bv.y > 0 and bv.y - speed or bv.y + speed
-					v2 = vector3(x, y, v2.z)
-				end
-				bv = v2.xy
-			else
-				bv = nil
-			end
+            if IsControlPressed(0, `INPUT_CONTEXT_X`) then
+                if bv then
+                    local x = bv.x > 0 and bv.x - speed or bv.x + speed
+                    local y = bv.y > 0 and bv.y - speed or bv.y + speed
+                    v2 = vector3(x, y, v2.z)
+                end
+                bv = v2.xy
+            else
+                bv = nil
+            end
 
-			if IsControlJustPressed(0, `INPUT_CONTEXT_A`) then
-				lockZ = not lockZ
-				if lockZ then
-					lockZPrompt:setText(T.Prompts.UnlockInAltitude)
-				else
-					lockZPrompt:setText(T.Prompts.LockInAltitude)
-				end
-			end
+            if IsControlJustPressed(0, `INPUT_CONTEXT_A`) then
+                lockZ = not lockZ
+                if lockZ then
+                    lockZPrompt:setText(T.Prompts.UnlockInAltitude)
+                else
+                    lockZPrompt:setText(T.Prompts.LockInAltitude)
+                end
+            end
 
-			if lockZ and not IsControlPressed(0, `INPUT_VEH_FLY_THROTTLE_UP`) then
-				SetEntityVelocity(balloon, vector3(v2.x, v2.y, 0.0))
-			elseif v2 ~= v1 then
-				SetEntityVelocity(balloon, v2)
-			end
+            if lockZ and not IsControlPressed(0, `INPUT_VEH_FLY_THROTTLE_UP`) then
+                SetEntityVelocity(balloon, vector3(v2.x, v2.y, 0.0))
+            elseif v2 ~= v1 then
+                SetEntityVelocity(balloon, v2)
+            end
 
-			if IsControlJustPressed(0, `INPUT_VEH_HORN`) then
+            if IsControlJustPressed(0, `INPUT_VEH_HORN`) then
                 if DoesEntityExist(balloon) then
                     local balloonHeight = GetEntityHeightAboveGround(balloon)
                     if balloonHeight <= 0.5 then
@@ -114,11 +136,11 @@ Citizen.CreateThread(function()
                 end
             end
 
-			Citizen.Wait(0)
-		else
-			Citizen.Wait(500)
-		end
-	end
+            Citizen.Wait(0)
+        else
+            Citizen.Wait(500)
+        end
+    end
 end)
 
 local BalloonGroup = GetRandomIntInRange(0, 0xffffff)
@@ -383,9 +405,6 @@ AddEventHandler("rs_balloon:CreateNPC", function(zone)
 
     table.insert(NPCss, npc)
 end)
-
-local spawn_balloon = nil
-local current_balloon_id = nil
 
 RegisterNetEvent('rs_balloon:spawnBalloon1')
 AddEventHandler('rs_balloon:spawnBalloon1', function(balloonId, locationIndex)
