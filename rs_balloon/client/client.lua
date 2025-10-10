@@ -396,7 +396,7 @@ AddEventHandler("rs_balloon:CreateNPC", function(zone)
 
     local npc = CreatePed(model, zone.x, zone.y, zone.z, zone.w, false, true)
     Citizen.InvokeNative(0x283978A15512B2FE , npc, true)
-    SetEntityNoCollisionEntity(PlayerPedId(), npc, false)
+    SetEntityNoCollisionEntity(PlayerPedId(), npc, true)
     SetEntityCanBeDamaged(npc, false)
     SetEntityInvincible(npc, true)
     FreezeEntityPosition(npc, true)
