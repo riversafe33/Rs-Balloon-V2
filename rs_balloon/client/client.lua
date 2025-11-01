@@ -143,6 +143,18 @@ Citizen.CreateThread(function()
     end
 end)
 
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+
+        local balloonHeight = GetEntityHeightAboveGround(balloon)
+
+        if balloonHeight > 0.5 then
+            DisableControlAction(0, `INPUT_VEH_EXIT`, true)
+        end
+    end
+end)
+
 local BalloonGroup = GetRandomIntInRange(0, 0xffffff)
 local OwnedBallons = {}
 local near = 1000
