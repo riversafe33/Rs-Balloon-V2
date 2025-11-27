@@ -1,7 +1,7 @@
 Config = {}
 
 -- Change the language
-Config.Lang = 'English' -- 'English' -- 'French' -- 'Portuguese_BR'  -- 'German'  -- 'Italian' -- 'Spanish' -- 'Romanian'
+Config.Lang = 'English' -- 'English' -- 'French' -- 'Portuguese_BR' -- 'Portuguese_PT'  -- 'German'  -- 'Italian' -- 'Spanish' -- 'Romanian'
 
 ------------------------------- Hot Air Balloon Rental ------------------------------
 Config.KeyToBuyBalloon = 0xD9D0E1C0 -- [ SPACE ] Key to rent the balloon
