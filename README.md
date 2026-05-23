@@ -1,12 +1,8 @@
-I create and share digital tools with passion and purpose.
-
-There’s absolutely no pressure to donate, but if my work has been helpful to you, any contribution is sincerely appreciated.
-
-Your support goes directly toward upgrading my PC and developing more free scripts for everyone.
-
-Thank you for your support! ❤️
+# Buy me a beer :beer:  :heart: 
 
 https://ko-fi.com/riversafe33
+
+Pay pal https://www.paypal.com/donate/?hosted_button_id=NX4ENSGYS6YJN
 
 Dependency
 
