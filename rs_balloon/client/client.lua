@@ -27,8 +27,11 @@ end)
 
 Citizen.CreateThread(function()
     while true do
-        if balloon == spawn_balloon then
-            DisableControlAction(0, `INPUT_VEH_HORN`, true)
+        if balloon and balloon == spawnballoon then
+            local model = GetEntityModel(balloon)
+            if model == GetHashKey("hotAirBalloon01") or model == GetHashKey("hotairballoon01x") then
+                DisableControlAction(0, INPUT_VEH_HORN, true)
+            end
         end
         Citizen.Wait(0)
     end
